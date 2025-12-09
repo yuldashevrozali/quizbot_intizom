@@ -1,5 +1,6 @@
 require("dotenv").config();
 const { Telegraf, Markup } = require("telegraf");
+const express = require("express");
 const fs = require("fs");
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -206,7 +207,27 @@ bot.action('check_sub', async (ctx) => {
 });
 
 // =============================
-// BOT RUN
+// BOT RUN (WEBHOOK MODE)
 // =============================
-bot.launch();
-console.log("Bot ishga tushdi...");
+const app = express();
+app.use(express.json());
+
+// Health check
+app.get('/', (req, res) => {
+  res.send('Bot is running');
+});
+
+// Webhook endpoint
+app.use(bot.webhookCallback('/telegram'));
+
+// Set webhook
+const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL + '/telegram';
+bot.telegram.setWebhook(WEBHOOK_URL).then(() => {
+  console.log(`Webhook set to ${WEBHOOK_URL}`);
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
