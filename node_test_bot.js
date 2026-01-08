@@ -8,12 +8,10 @@ const ADMIN_ID = process.env.ADMIN_ID;
 const CHANNEL = process.env.CHANNEL_USERNAME;
 const DATA_FILE = "./tests.json";
 
-// =============================
-// STORAGE
-// =============================
-let store = { tests: {} };
+let store = { tests: {}, users: {} };
 if (fs.existsSync(DATA_FILE)) {
   store = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+  store.users = store.users || {};
 }
 function save() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2));
@@ -24,6 +22,8 @@ let userSession = {};
 let adminState = {};
 // user registration state
 let userReg = {};
+// leaderboard state
+let leaderboardState = {};
 
 
 // =============================
@@ -31,8 +31,12 @@ let userReg = {};
 // =============================
 bot.start((ctx) => {
   const id = ctx.from.id;
-  userReg[id] = { step: 1 };
-  ctx.reply("📝 To‘liq Familiya-Ism kiriting (faqat lotin harflarida):\n\nMasalan: Mashrapov Aburayxon");
+  if (store.users[id]) {
+    ctx.reply("Siz allaqachon ro'yxatdan o'tgansiz. Menudan foydalaning.", Markup.keyboard([["📝 Test ishlash"], ["🏆 Leaderboard"]]).resize());
+  } else {
+    userReg[id] = { step: 1 };
+    ctx.reply("📝 To‘liq Familiya-Ism kiriting (faqat lotin harflarida):\n\nMasalan: Mashrapov Aburayxon");
+  }
 });
 
 
@@ -70,6 +74,14 @@ bot.hears("📝 Test ishlash", (ctx) => {
   ctx.reply("Test kodini kiriting (masalan 15214):");
 });
 
+// =============================
+// LEADERBOARD
+// =============================
+bot.hears("🏆 Leaderboard", (ctx) => {
+  leaderboardState[ctx.from.id] = true;
+  ctx.reply("Leaderboard ko'rish uchun test kodini kiriting (masalan 11134):");
+});
+
 
 // =============================
 // TEXT HANDLER — OXIRIDA TURADI!
@@ -103,20 +115,22 @@ bot.on("text", (ctx) => {
 
       state.code = text;
       state.step = 2;
-      return ctx.reply("Test kalitlarini kiriting (masalan 1a2b3c4d):");
+      return ctx.reply("Test kalitlarini kiriting (masalan:\n1.a\n2.b\n3.c\n4.d)");
     }
 
     // STEP 2 — ANSWER KEYS
     if (state.step === 2) {
-      const regex = /(\d+)([a-z])/gi;
-      let match;
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line);
       const questions = [];
 
-      while ((match = regex.exec(text.toLowerCase())) !== null) {
-        questions.push({ id: Number(match[1]), answer: match[2] });
+      for (const line of lines) {
+        const match = line.match(/^(\d+)\.\s*(.+)$/);
+        if (match) {
+          questions.push({ id: Number(match[1]), answer: match[2].trim().toLowerCase() });
+        }
       }
 
-      if (questions.length === 0) return ctx.reply("Xato format, qayta kiriting: 1a2b3c");
+      if (questions.length === 0) return ctx.reply("Xato format, qayta kiriting:\n1.a\n2.b\n3.c");
 
       store.tests[state.code] = {
         code: state.code,
@@ -139,21 +153,24 @@ bot.on("text", (ctx) => {
     if (us.step === 1) {
       if (!/^\d{5}$/.test(text)) return ctx.reply("Kod 5 xonali bo‘lishi kerak.");
       if (!store.tests[text]) return ctx.reply("Bunday kodli test yo‘q. Qayta kiriting.");
+      if (store.users[id] && store.users[id].solvedTests[text]) return ctx.reply("Siz bu testni allaqachon yechgansiz. Boshqa test kodini kiriting.");
 
       us.code = text;
       us.step = 2;
-      return ctx.reply("Test kalitlaringizni kiriting (masalan 1a2b3c4d):");
+      return ctx.reply("Test kalitlaringizni kiriting (masalan:\n1.a\n2.b\n3.c\n4.d)");
     }
 
     // STEP 2 — USER ANSWERS
     if (us.step === 2) {
       const test = store.tests[us.code];
-      const regex = /(\d+)([a-z])/gi;
-      let match;
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line);
       const answers = {};
 
-      while ((match = regex.exec(text.toLowerCase())) !== null) {
-        answers[Number(match[1])] = match[2];
+      for (const line of lines) {
+        const match = line.match(/^(\d+)\.\s*(.+)$/);
+        if (match) {
+          answers[Number(match[1])] = match[2].trim().toLowerCase();
+        }
       }
 
       let correct = 0;
@@ -163,10 +180,35 @@ bot.on("text", (ctx) => {
         if (answers[q.id] && answers[q.id] === q.answer) correct++;
       });
 
+      if (!store.users[id].solvedTests[us.code]) {
+        store.users[id].solvedTests[us.code] = correct;
+        save();
+      }
+
       delete userSession[id];
 
       return ctx.reply(`📊 Natija:\n${total} ta savoldan ${correct} tasini to‘g‘ri topdingiz.`);
     }
+  }
+
+  // ================= LEADERBOARD FLOW =================
+  if (leaderboardState[id]) {
+    delete leaderboardState[id];
+    if (store.tests[text]) {
+      const testCode = text;
+      const scores = Object.entries(store.users).filter(([id, user]) => user.solvedTests[testCode]).map(([id, user]) => {
+        return { name: user.name, score: user.solvedTests[testCode] };
+      }).sort((a, b) => b.score - a.score).slice(0, 100);
+      let msg = `🏆 Leaderboard for test ${testCode}:\n`;
+      scores.forEach((s, i) => {
+        msg += `${i + 1}. ${s.name} - ${s.score}\n`;
+      });
+      if (scores.length === 0) msg += "Hozircha hech kim bu testni yechmagan.";
+      ctx.reply(msg);
+    } else {
+      ctx.reply("Noto'g'ri test kodi. Qayta kiriting.");
+    }
+    return;
   }
 });
 
@@ -195,8 +237,10 @@ bot.action('check_sub', async (ctx) => {
   try {
     const member = await ctx.telegram.getChatMember(`@${CHANNEL}`, id);
     if (member.status === 'member' || member.status === 'administrator' || member.status === 'creator') {
+      store.users[id] = { name: userReg[id].name, phone: userReg[id].phone, solvedTests: {} };
+      save();
       delete userReg[id];
-      ctx.reply("Botimizdan foydalanishingiz mumkin! Test ishlash uchun quyidagi tugmani bosing.", Markup.keyboard([["📝 Test ishlash"]]).resize());
+      ctx.reply("Botimizdan foydalanishingiz mumkin! Test ishlash uchun quyidagi tugmani bosing.", Markup.keyboard([["📝 Test ishlash"], ["🏆 Leaderboard"]]).resize());
     } else {
       ctx.answerCbQuery("Siz kanalga obuna bo'lmagansiz. Avval obuna bo'ling.");
     }
@@ -220,11 +264,17 @@ app.get('/', (req, res) => {
 // Webhook endpoint
 app.use(bot.webhookCallback('/telegram'));
 
-// Set webhook
-const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL + '/telegram';
-bot.telegram.setWebhook(WEBHOOK_URL).then(() => {
-  console.log(`Webhook set to ${WEBHOOK_URL}`);
-});
+// Set webhook or polling
+if (process.env.RENDER_EXTERNAL_URL) {
+  const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL + '/telegram';
+  bot.telegram.setWebhook(WEBHOOK_URL).then(() => {
+    console.log(`Webhook set to ${WEBHOOK_URL}`);
+  });
+} else {
+  bot.launch().then(() => {
+    console.log('Bot started in polling mode');
+  });
+}
 
 // Start server
 const PORT = process.env.PORT || 3000;
