@@ -3,7 +3,8 @@ const { Telegraf, Markup } = require("telegraf");
 const express = require("express");
 const fs = require("fs");
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
+const bot1 = new Telegraf(process.env.BOT_TOKEN);
+const bot2 = new Telegraf(process.env.BOT_TOKEN2);
 const ADMIN_ID = process.env.ADMIN_ID;
 const CHANNEL = process.env.CHANNEL_USERNAME;
 const DATA_FILE = "./tests.json";
@@ -25,7 +26,7 @@ let userReg = {};
 // leaderboard state
 let leaderboardState = {};
 
-
+function setupBot(bot) {
 // =============================
 // START
 // =============================
@@ -249,6 +250,11 @@ bot.action('check_sub', async (ctx) => {
     ctx.answerCbQuery("Xatolik yuz berdi.");
   }
 });
+}
+
+// Setup both bots
+setupBot(bot1);
+setupBot(bot2);
 
 // =============================
 // BOT RUN (WEBHOOK MODE)
@@ -261,18 +267,26 @@ app.get('/', (req, res) => {
   res.send('Bot is running');
 });
 
-// Webhook endpoint
-app.use(bot.webhookCallback('/telegram'));
+// Webhook endpoints
+app.use('/telegram1', bot1.webhookCallback('/telegram1'));
+app.use('/telegram2', bot2.webhookCallback('/telegram2'));
 
 // Set webhook or polling
 if (process.env.RENDER_EXTERNAL_URL) {
-  const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL + '/telegram';
-  bot.telegram.setWebhook(WEBHOOK_URL).then(() => {
-    console.log(`Webhook set to ${WEBHOOK_URL}`);
+  const WEBHOOK_URL1 = process.env.RENDER_EXTERNAL_URL + '/telegram1';
+  const WEBHOOK_URL2 = process.env.RENDER_EXTERNAL_URL + '/telegram2';
+  bot1.telegram.setWebhook(WEBHOOK_URL1).then(() => {
+    console.log(`Bot1 webhook set to ${WEBHOOK_URL1}`);
+  });
+  bot2.telegram.setWebhook(WEBHOOK_URL2).then(() => {
+    console.log(`Bot2 webhook set to ${WEBHOOK_URL2}`);
   });
 } else {
-  bot.launch().then(() => {
-    console.log('Bot started in polling mode');
+  bot1.launch().then(() => {
+    console.log('Bot1 started in polling mode');
+  });
+  bot2.launch().then(() => {
+    console.log('Bot2 started in polling mode');
   });
 }
 
