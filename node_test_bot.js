@@ -10,6 +10,7 @@ const path = require("path");
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const BOT_TOKEN2 = process.env.BOT_TOKEN2;
 const ADMIN_ID = String(process.env.ADMIN_ID || ""); // string qilib olamiz
+const ADMIN_ID2 = String(process.env.ADMIN_ID2 || ""); // string qilib olamiz
 const CHANNEL = process.env.CHANNEL_USERNAME; // "mychannel" ( @sizsiz )
 
 if (!BOT_TOKEN || !BOT_TOKEN2) {
@@ -17,7 +18,11 @@ if (!BOT_TOKEN || !BOT_TOKEN2) {
 }
 
 if (!ADMIN_ID) {
-  console.warn("⚠️ ADMIN_ID yo‘q. /adminman ishlamasligi mumkin.");
+  console.warn("⚠️ ADMIN_ID yo‘q. Bot1 uchun /adminman ishlamasligi mumkin.");
+}
+
+if (!ADMIN_ID2) {
+  console.warn("⚠️ ADMIN_ID2 yo‘q. Bot2 uchun /adminman ishlamasligi mumkin.");
 }
 
 if (!CHANNEL) {
@@ -69,7 +74,7 @@ let leaderboardState = {};   // { [userId]: true }
 // =============================
 // BOT SETUP
 // =============================
-function setupBot(bot) {
+function setupBot(bot, adminId) {
   // START
   bot.start((ctx) => {
     const id = String(ctx.from.id);
@@ -92,7 +97,7 @@ function setupBot(bot) {
     const id = String(ctx.from.id);
     console.log("ADMIN CMD:", id);
 
-    if (id !== ADMIN_ID) return ctx.reply("Siz admin emassiz ❌");
+    if (id !== adminId) return ctx.reply("Siz admin emassiz ❌");
 
     return ctx.reply(
       "Admin panelga xush kelibsiz!",
@@ -102,7 +107,7 @@ function setupBot(bot) {
 
   bot.hears("➕ Test qo‘shish", (ctx) => {
     const id = String(ctx.from.id);
-    if (id !== ADMIN_ID) return ctx.reply("Faqat admin test qo‘sha oladi ❌");
+    if (id !== adminId) return ctx.reply("Faqat admin test qo‘sha oladi ❌");
 
     adminState[id] = { step: 1 };
     return ctx.reply("Yangi test kodini kiriting (5 xonali):");
@@ -349,8 +354,8 @@ function setupBot(bot) {
 }
 
 // Setup both bots
-setupBot(bot1);
-setupBot(bot2);
+setupBot(bot1, ADMIN_ID);
+setupBot(bot2, ADMIN_ID2);
 
 // =============================
 // WEBHOOK SERVER (Render) - FIXED
