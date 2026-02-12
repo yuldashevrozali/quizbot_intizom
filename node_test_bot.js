@@ -287,40 +287,76 @@ function setupBot(bot, adminId) {
       }
 
       // STEP 2 — USER ANSWERS
-      if (us.step === 2) {
-        const test = store.tests[us.code];
-        if (!test) {
-          delete userSession[id];
-          return ctx.reply("Test topilmadi. Qayta urinib ko‘ring.");
-        }
+      // STEP 2 — USER ANSWERS
+if (us.step === 2) {
+  const test = store.tests[us.code];
+  if (!test) {
+    delete userSession[id];
+    return ctx.reply("Test topilmadi. Qayta urinib ko‘ring.");
+  }
 
-        const lines = text
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
-        const answers = {};
-        for (const line of lines) {
-          const match = line.match(/^(\d+)\.\s*(.+)$/);
-          if (match) {
-            answers[Number(match[1])] = match[2].trim().toLowerCase();
-          }
-        }
+  const answers = {};
+  for (const line of lines) {
+    const match = line.match(/^(\d+)\.\s*(.+)$/);
+    if (match) {
+      answers[Number(match[1])] = match[2].trim().toLowerCase();
+    }
+  }
 
-        let correct = 0;
-        const total = test.questions.length;
+  let correct = 0;
+  const total = test.questions.length;
 
-        test.questions.forEach((q) => {
-          if (answers[q.id] && answers[q.id] === q.answer) correct++;
-        });
+  // ✅ detailed analysis
+  const detailLines = [];
+  test.questions.forEach((q, idx) => {
+    const userAns = answers[q.id];        // user kiritgan
+    const rightAns = q.answer;            // asl javob
 
-        store.users[id].solvedTests = store.users[id].solvedTests || {};
-        store.users[id].solvedTests[us.code] = correct;
-        save();
+    if (userAns && userAns === rightAns) correct++;
 
-        delete userSession[id];
-        return ctx.reply(`📊 Natija:\n${total} ta savoldan ${correct} tasini to‘g‘ri topdingiz.`);
-      }
+    // status
+    const status = userAns
+      ? (userAns === rightAns ? "✅" : "❌")
+      : "⚪️";
+
+    // format
+    detailLines.push(
+      `${status} ${q.id}) ` +
+      `Siz: ${userAns ? userAns : "— (javob yo‘q)"} | ` +
+      `To‘g‘ri: ${rightAns}`
+    );
+  });
+
+  store.users[id].solvedTests = store.users[id].solvedTests || {};
+  store.users[id].solvedTests[us.code] = correct;
+  save();
+
+  delete userSession[id];
+
+  // Telegram limit: 4096. Juda uzun test bo‘lsa, kesib yuboramiz.
+  let msg =
+    `📊 Natija (Test ${us.code}):\n` +
+    `${total} ta savoldan ${correct} tasini to‘g‘ri topdingiz.\n\n` +
+    `🧾 Tahlil:\n` +
+    detailLines.join("\n");
+
+  if (msg.length > 3800) {
+    msg =
+      `📊 Natija (Test ${us.code}):\n` +
+      `${total} ta savoldan ${correct} tasini to‘g‘ri topdingiz.\n\n` +
+      `🧾 Tahlil juda uzun bo‘lgani uchun qisqartirildi.\n\n` +
+      detailLines.slice(0, 50).join("\n") +
+      `\n... (davomi bor)`;
+  }
+
+  return ctx.reply(msg);
+}
+
     }
 
     // ============ LEADERBOARD FLOW ============
