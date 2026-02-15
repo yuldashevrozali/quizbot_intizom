@@ -360,29 +360,116 @@ if (us.step === 2) {
     }
 
     // ============ LEADERBOARD FLOW ============
-    if (leaderboardState[id]) {
-      delete leaderboardState[id];
+    // ============ LEADERBOARD FLOW ============
+if (leaderboardState[id]) {
+  delete leaderboardState[id];
 
-      if (!store.tests[text]) {
-        return ctx.reply("Noto'g'ri test kodi. Qayta kiriting.");
-      }
+  // user kiritgan kod (5 xonali bo‘lsa ham bo‘lmasa ham trim qilingan)
+  const testCode = text;
 
-      const testCode = text;
+  // ✅ Faqat 09090 uchun statik leaderboard
+  if (testCode === "09090") {
+    const msg =
+`🏆 Leaderboard for test 09090:
+1. Oygul Qosimova - 15
+2.  Otajonov Murod - 15
+3.  Jurayev Sardorbek - 15 
+4. Abdullayev Hasanboy
+5. Shonazarova Jumagul
+6. Yuala adam
+7. Normatov abbos - 15
+8. Suyarova Muhabbat - 15
+9. Turgunova Muxlisaxon - 15
+10. Butanova - 15
+11. Unknown - 15
+12. Feruza Tojiboyeva - 15
+13. Bogbekova Zulfiya - 15
+14. Zuhraxon Jurayeva - 14
+15. Inomova Mahina - 14
+16. Boltayeva Dilorom - 14
+17. Jabborova Nasiba - 13
+18. Axmadaliyeva Arofatxon - 13
+19. Abdullayeva Shoira - 12
+20. Xatamova Xurshida - 12
+21. Akramova Sojida - 12
+22. Boynazarova Dilfuza - 12
+23. Xudoybergenov Suhrobjon - 12
+24. Suyunov Uygun - 12
+25. Rabbimova Gulshoda - 12
+26. Unknown - 11
+27. Ulukova Ozoda - 11
+28. Sabo Islomova - 11
+29. Nurxonov Azamxon - 11
+30. Mahfuza Burhonova - 10
+31. Zakirova Zamira - 10
+32. Nuraddinova Shahnoza - 10
+33. Mardonova Farangiz - 10
+34. Hamroyev Javohir Iskandarovich - 10
+35. Boltayeva Farangis - 10
+36. Islomova Zarnigor - 10
+37. Xudoynazarova Barnoxon - 10
+38. Munisaxon MUXTORJONOVA - 10
+39. Burxonjonova Safiyaxon - 10
+40. Djumamuratova Inobad - 9
+41. Safarova Feruza - 9
+42. Kamolov Komil - 9
+43. Xamraliyeva Rozixon - 9
+44. Ahmedova Malika - 9
+45. Akramjonova Maftunaxon - 8
+46. Xoliqova Marifat - 8
+47. Qaysi harf bu - 8
+48. Shoyimova Tuybibi - 8
+49. Sattarova Gulirano - 8
+50. Mustafayeva Munira - 8
+51. Maqsud Atadjanov - 7
+52. Quchqarova Marhabo - 7
+53. Axmedova Yulduz - 6
+54. Nishanova Donoxon - 6
+55. Utenova Aysulu - 5
+56. Sattorova Aziza - 4
+57. Hamid Gofforov - 1
+58. Mardiyev Ilhomjon Abdihakimovich - 1
+59. Berdiyeva Shaxlo - 1
+60. Sevara - 1
+61. Raxmonova Zulxumor - 1
+62. Islomova Sayyora - 1
+63. Atadjanova Muqaddas - 1
+64. Saidova Mahbuba - 1
+65. Davlatbek - 1
+66. Jalilov Olim - 1
+67. Gulixon - 1
+68. Hamidulla Xayrulla - 1
+69. Feruza Tojiboyeva - 1
+70. Sanobar - 1
+71. Tojiboyeva Feruza - 1
+72. Feruza Toshmatova - 1
+73. Qaysi harfda kirityabman - 1
+74. Mashrapov Aburayxon - 1
+75. Ochilova Shahnoza - 1
+76. Karimova Nigora - 1`;
+    return ctx.reply(msg);
+  }
 
-      const scores = Object.entries(store.users)
-        .filter(([_, user]) => user?.solvedTests && user.solvedTests[testCode] !== undefined)
-        .map(([_, user]) => ({ name: user.name, score: user.solvedTests[testCode] }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 100);
+  // ✅ qolgan barcha kodlar uchun eski dinamik leaderboard
+  if (!store.tests[testCode]) {
+    return ctx.reply("Noto'g'ri test kodi. Qayta kiriting.");
+  }
 
-      let msg = `🏆 Leaderboard for test ${testCode}:\n`;
-      scores.forEach((s, i) => {
-        msg += `${i + 1}. ${s.name} - ${s.score}\n`;
-      });
-      if (scores.length === 0) msg += "Hozircha hech kim bu testni yechmagan.";
+  const scores = Object.entries(store.users)
+    .filter(([_, user]) => user?.solvedTests && user.solvedTests[testCode] !== undefined)
+    .map(([_, user]) => ({ name: user.name, score: user.solvedTests[testCode] }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 100);
 
-      return ctx.reply(msg);
-    }
+  let msg = `🏆 Leaderboard for test ${testCode}:\n`;
+  scores.forEach((s, i) => {
+    msg += `${i + 1}. ${s.name} - ${s.score}\n`;
+  });
+  if (scores.length === 0) msg += "Hozircha hech kim bu testni yechmagan.";
+
+  return ctx.reply(msg);
+}
+
 
     // default
     return ctx.reply("Menudan foydalaning 😊", Markup.keyboard([["📝 Test ishlash"], ["🏆 Leaderboard"]]).resize());
