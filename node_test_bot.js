@@ -372,8 +372,8 @@ if (leaderboardState[id]) {
     const msg =
 `🏆 Leaderboard for test 09090:
 1. Oygul Qosimova - 15
-2.  Otajonov Murod - 15
-3.  Jurayev Sardorbek - 15 
+2. Otajonov Murod - 15
+3. Jurayev Sardorbek - 15
 4. Abdullayev Hasanboy - 15
 5. Shonazarova Jumagul - 15
 6. Yuala adam - 15
