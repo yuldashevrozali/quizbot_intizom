@@ -374,9 +374,9 @@ if (leaderboardState[id]) {
 1. Oygul Qosimova - 15
 2.  Otajonov Murod - 15
 3.  Jurayev Sardorbek - 15 
-4. Abdullayev Hasanboy
-5. Shonazarova Jumagul
-6. Yuala adam
+4. Abdullayev Hasanboy - 15
+5. Shonazarova Jumagul - 15
+6. Yuala adam - 15
 7. Normatov abbos - 15
 8. Suyarova Muhabbat - 15
 9. Turgunova Muxlisaxon - 15
